@@ -1,4 +1,5 @@
 ---
+# Configuracion de despliegue automatico para cPanel
 deployment:
   tasks:
     - export DEPLOYPATH=/home/prowebco/public_html/api.proweb.com.co/
