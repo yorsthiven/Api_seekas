@@ -1,0 +1,4 @@
+# .gitignore
+conexion.php
+.env
+*.log
