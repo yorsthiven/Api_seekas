@@ -36,6 +36,19 @@ switch ($resource) {
         }
         break;
 
+    case 'productos':
+        require_once __DIR__ . '/controllers/ProductoController.php';
+        $controller = new ProductoController();
+
+        if ($method === 'GET') {
+            $controller->listarProductos();
+        } else {
+            http_response_code(405);
+            echo json_encode(["error" => "Método no permitido"]);
+        }
+        break;
+
+
     default:
         http_response_code(404);
         echo json_encode(["error" => "Recurso no encontrado"]);
