@@ -10,13 +10,15 @@ class Database {
 
     public static function getConnection(): PDO {
         if (self::$instance === null) {
-            $host = '5.9.79.107';
-            $db   = 'prowebco_prueba1';
-            $user = 'prowebco_usuario_prueba1';
-            $pass = 'Contra_user_1';
-            $charset = 'utf8mb4';
+            $configFile = __DIR__ . '/database.local.php';
 
-            $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
+            if (!file_exists($configFile)) {
+                throw new Exception("El archivo de configuración de base de datos no existe.");
+            }
+
+            $config = require $configFile;
+
+            $dsn = "mysql:host={$config['host']};dbname={$config['db']};charset=utf8mb4";
             $options = [
                 PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -24,12 +26,9 @@ class Database {
             ];
 
             try {
-                self::$instance = new PDO($dsn, $user, $pass, $options);
+                self::$instance = new PDO($dsn, $config['user'], $config['pass'], $options);
             } catch (PDOException $e) {
-                header('Content-Type: application/json; charset=utf-8');
-                http_response_code(500);
-                echo json_encode(["error" => "Error de conexión", "detalle" => $e->getMessage()]);
-                exit;
+                \Core\Response::error("Error de conexión: " . $e->getMessage(), 500);
             }
         }
         return self::$instance;

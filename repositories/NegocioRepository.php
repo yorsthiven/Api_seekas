@@ -1,13 +1,11 @@
 <?php
 namespace Repositories;
-
 require_once __DIR__ . '/../config/Database.php';
 
 use Config\Database;
 use PDO;
 class NegocioRepository
 {
-
     private PDO $db;
 
     public function __construct()

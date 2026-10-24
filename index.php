@@ -1,5 +1,19 @@
 <?php
+use Controllers\NegocioController;
+use Controllers\ProductoController;
+
 // index.php (Punto de entrada principal)
+
+// 1. Cabeceras CORS obligatorias
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+
+// Si es una petición preflight de CORS (OPTIONS), responder y salir de inmediato
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 
 header("Content-Type: application/json; charset=UTF-8");
 
@@ -23,19 +37,12 @@ switch ($resource) {
             } else {
                 $controller->listarNegocios();
             }
-            // } elseif ($method === 'POST') {
-            //     $controller->crearNegocio();
-            // } elseif ($method === 'PUT') {
-            //     $controller->actualizarNegocio($id);
-            // } elseif ($method === 'DELETE') {
-            //     $controller->eliminarNegocio($id);
-            //
+
         } else {
             http_response_code(405);
             echo json_encode(["error" => "Método no permitido"]);
         }
         break;
-
     case 'productos':
         require_once __DIR__ . '/controllers/ProductoController.php';
         $controller = new ProductoController();
@@ -47,7 +54,6 @@ switch ($resource) {
             echo json_encode(["error" => "Método no permitido"]);
         }
         break;
-
 
     default:
         http_response_code(404);
