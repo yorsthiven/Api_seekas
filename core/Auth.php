@@ -37,6 +37,9 @@ class Auth
     {
         $configuredToken = getenv('API_ADMIN_TOKEN');
         if (!is_string($configuredToken) || strlen($configuredToken) < 32) {
+            $configuredToken = self::getPrivateConfigValue('api_admin_token');
+        }
+        if (!is_string($configuredToken) || strlen($configuredToken) < 32) {
             Response::error('La API no tiene configurado un token administrativo seguro.', 503);
         }
 
@@ -142,10 +145,29 @@ class Auth
     {
         $secret = getenv('JWT_SECRET');
         if (!is_string($secret) || strlen($secret) < 32) {
+            $secret = self::getPrivateConfigValue('jwt_secret');
+        }
+        if (!is_string($secret) || strlen($secret) < 32) {
             throw new \RuntimeException('JWT_SECRET debe configurarse con al menos 32 caracteres.');
         }
 
         return $secret;
+    }
+
+    private static function getPrivateConfigValue(string $key): ?string
+    {
+        $configFile = dirname(__DIR__, 3) . '/api-secrets.php';
+        if (!is_file($configFile)) {
+            return null;
+        }
+
+        $config = require $configFile;
+        if (!is_array($config)) {
+            throw new \RuntimeException('El archivo privado de configuración no es válido.');
+        }
+
+        $value = $config[$key] ?? null;
+        return is_string($value) ? $value : null;
     }
 
     private static function base64UrlEncode(string $value): string

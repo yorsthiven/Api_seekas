@@ -2,3 +2,5 @@
 conexion.php
 .env
 *.log
+config/database.local.php
+api-secrets.php
