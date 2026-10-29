@@ -3,18 +3,17 @@ namespace Config;
 
 use PDO;
 use PDOException;
+require_once __DIR__ . '/Secrets.php';
 
 class Database {
     private static ?PDO $instance = null;
 
     public static function getConnection(): PDO {
         if (self::$instance === null) {
-            $config = self::loadConfig();
-            if (!isset($config['db_host'], $config['db_name'], $config['db_user'], $config['db_password'])) {
-                throw new \RuntimeException('La configuración de base de datos está incompleta.');
-            }
+            $config = Secrets::getDatabaseConfig();
 
-            $dsn = "mysql:host={$config['db_host']};dbname={$config['db_name']};charset=utf8mb4";
+            $port = isset($config['db_port']) ? ";port={$config['db_port']}" : '';
+            $dsn = "mysql:host={$config['db_host']}{$port};dbname={$config['db_name']};charset=utf8mb4";
             $options = [
                 PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -29,37 +28,5 @@ class Database {
             }
         }
         return self::$instance;
-    }
-
-    private static function loadConfig(): array
-    {
-        $environmentConfig = [
-            'db_host' => getenv('DB_HOST'),
-            'db_name' => getenv('DB_NAME'),
-            'db_user' => getenv('DB_USER'),
-            'db_password' => getenv('DB_PASSWORD'),
-        ];
-        if (count(array_filter($environmentConfig, 'is_string')) === count($environmentConfig)) {
-            return $environmentConfig;
-        }
-
-        $configFiles = [
-            __DIR__ . '/database.local.php',
-            dirname(__DIR__, 2) . '/api-secrets.php',
-        ];
-        foreach ($configFiles as $configFile) {
-            if (!is_file($configFile)) {
-                continue;
-            }
-            $config = require $configFile;
-            if (!is_array($config)) {
-                throw new \RuntimeException('El archivo privado de configuración no es válido.');
-            }
-            if (isset($config['db_host'], $config['db_name'], $config['db_user'], $config['db_password'])) {
-                return $config;
-            }
-        }
-
-        throw new \RuntimeException('Falta configurar la conexión privada de base de datos.');
     }
 }

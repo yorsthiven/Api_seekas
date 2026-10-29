@@ -34,7 +34,17 @@ Si tu plan no permite crear archivos fuera de `public_html`, consulta al soporte
 
 La configuración anterior del proyecto contenía credenciales de la base de datos en un archivo versionado. Por precaución, cambia la contraseña de ese usuario desde cPanel y actualiza `db_password` en `api-secrets.php`. La contraseña anterior pudo permanecer en el historial de Git, por lo que eliminar el archivo de la versión actual no sustituye la rotación.
 
-Para desarrollo local, copia [la plantilla local](./config/database.local.php.example) a `config/database.local.php` y reemplaza los valores de ejemplo por las credenciales de tu base local y dos secretos distintos. Este archivo está excluido de Git. En el hosting, conserva `api-secrets.php` fuera de las carpetas públicas; el proyecto busca primero las variables de entorno, luego la configuración local y finalmente el archivo privado del hosting. El despliegue de cPanel publica el código en `/home/prowebco/api.proweb.com.co`, que debe coincidir con el directorio configurado para el subdominio.
+Para desarrollo local, configura [la plantilla local](./config/database.local.php.example) para que use tu base de XAMPP. El ejemplo apunta a `prowebco_prueba1` en `127.0.0.1:3307`, según la instancia local mostrada en phpMyAdmin; ajusta host, puerto, usuario y contraseña si tu instalación usa otros valores. La base mostrada ya contiene datos, por lo que las operaciones CRUD locales sí podrán modificarlos o eliminarlos. No ejecutes [el esquema de base vacía](./migrations/local_development_schema.sql) sobre esa base existente. Configura también dos secretos aleatorios locales distintos. Puedes generarlos en **XAMPP Shell** con `php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"`; ejecuta el comando dos veces y usa un resultado distinto en cada campo. Este archivo está excluido de Git.
+
+Cuando la petición llegue por `localhost` o `127.0.0.1`, la aplicación usa exclusivamente `config/database.local.php` y no busca el archivo privado del hosting. Si falta la configuración local, la API falla con un mensaje claro en vez de conectarse a producción. En el hosting, conserva `api-secrets.php` fuera de las carpetas públicas; el despliegue de cPanel publica el código en `/home/prowebco/api.proweb.com.co`, que debe coincidir con el directorio configurado para el subdominio.
+
+Pasos en XAMPP:
+
+1. Inicia Apache y MySQL desde el panel de XAMPP.
+2. Confirma en phpMyAdmin que la base local se llama `prowebco_prueba1` y el servidor usa el puerto `3307`.
+3. En `config/database.local.php`, configura `db_host` como `127.0.0.1`, `db_port` como `3307`, `db_name` como `prowebco_prueba1` y el usuario y contraseña que usas para MySQL local. Completa también los dos secretos.
+4. Si el proyecto está dentro de `htdocs/Api_seekas`, la URL local será `http://localhost/Api_seekas`. La aplicación también acepta rutas desde esa subcarpeta, por ejemplo `http://localhost/Api_seekas/auth/login`.
+5. Crea un usuario de prueba enviando `POST http://localhost/Api_seekas/usuarios` con el encabezado `X-Admin-Token` igual al `api_admin_token` local, y el JSON `{"negocio_id":1,"email":"prueba@example.com","password":"ClaveLocal123"}`. Luego inicia sesión en `POST http://localhost/Api_seekas/auth/login` con esos mismos datos. Usa una contraseña ficticia solo para desarrollo.
 
 ## 3. Preparar la contraseña de usuarios
 

@@ -20,6 +20,11 @@ header('Content-Type: application/json; charset=UTF-8');
 require_once __DIR__ . '/core/Auth.php';
 
 $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+$scriptDirectory = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/index.php'));
+$basePath = rtrim($scriptDirectory, '/');
+if ($basePath !== '' && ($uri === $basePath || str_starts_with((string) $uri, $basePath . '/'))) {
+    $uri = substr((string) $uri, strlen($basePath));
+}
 $segments = explode('/', trim((string) $uri, '/'));
 $resource = $segments[0] ?? '';
 $pathId = $segments[1] ?? null;

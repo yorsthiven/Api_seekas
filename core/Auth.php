@@ -4,6 +4,9 @@ namespace Core;
 require_once __DIR__ . '/AuthenticationException.php';
 require_once __DIR__ . '/AuthorizationException.php';
 require_once __DIR__ . '/Response.php';
+require_once __DIR__ . '/../config/Secrets.php';
+
+use Config\Secrets;
 
 class Auth
 {
@@ -35,10 +38,7 @@ class Auth
 
     public static function requireAdmin(): void
     {
-        $configuredToken = getenv('API_ADMIN_TOKEN');
-        if (!is_string($configuredToken) || strlen($configuredToken) < 32) {
-            $configuredToken = self::getPrivateConfigValue('api_admin_token');
-        }
+        $configuredToken = Secrets::get('api_admin_token');
         if (!is_string($configuredToken) || strlen($configuredToken) < 32) {
             Response::error('La API no tiene configurado un token administrativo seguro.', 503);
         }
@@ -143,39 +143,12 @@ class Auth
 
     private static function getJwtSecret(): string
     {
-        $secret = getenv('JWT_SECRET');
-        if (!is_string($secret) || strlen($secret) < 32) {
-            $secret = self::getPrivateConfigValue('jwt_secret');
-        }
+        $secret = Secrets::get('jwt_secret');
         if (!is_string($secret) || strlen($secret) < 32) {
             throw new \RuntimeException('JWT_SECRET debe configurarse con al menos 32 caracteres.');
         }
 
         return $secret;
-    }
-
-    private static function getPrivateConfigValue(string $key): ?string
-    {
-        $configFiles = [
-            dirname(__DIR__) . '/config/database.local.php',
-            dirname(__DIR__, 2) . '/api-secrets.php',
-        ];
-        foreach ($configFiles as $configFile) {
-            if (!is_file($configFile)) {
-                continue;
-            }
-            $config = require $configFile;
-            if (!is_array($config)) {
-                throw new \RuntimeException('El archivo privado de configuración no es válido.');
-            }
-
-            $value = $config[$key] ?? null;
-            if (is_string($value) && $value !== '') {
-                return $value;
-            }
-        }
-
-        return null;
     }
 
     private static function base64UrlEncode(string $value): string
