@@ -13,27 +13,23 @@ class ProductoRepository
     {
         $this->db = Database::getConnection();
     }
-    public function getAll(?int $negocioId = null): array
+    public function getAll(int $negocioId): array
     {
-        $sql = 'SELECT ' . self::PRODUCT_COLUMNS . ' FROM productos';
-        if ($negocioId !== null) {
-            $sql .= ' WHERE negocio_id = :negocio_id';
-        }
+        $sql = 'SELECT ' . self::PRODUCT_COLUMNS . ' FROM productos WHERE negocio_id = :negocio_id';
 
         $stmt = $this->db->prepare($sql);
-        if ($negocioId !== null) {
-            $stmt->bindValue(':negocio_id', $negocioId, PDO::PARAM_INT);
-        }
+        $stmt->bindValue(':negocio_id', $negocioId, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getById(int $id): ?array
+    public function getById(int $id, int $negocioId): ?array
     {
         $stmt = $this->db->prepare(
-            'SELECT ' . self::PRODUCT_COLUMNS . ' FROM productos WHERE id = :id'
+            'SELECT ' . self::PRODUCT_COLUMNS . ' FROM productos
+             WHERE id = :id AND negocio_id = :negocio_id'
         );
-        $stmt->execute(['id' => $id]);
+        $stmt->execute(['id' => $id, 'negocio_id' => $negocioId]);
         $product = $stmt->fetch(PDO::FETCH_ASSOC);
 
         return $product === false ? null : $product;
@@ -79,7 +75,7 @@ class ProductoRepository
         return (int) $this->db->lastInsertId();
     }
 
-    public function actualizarProducto(int $id, array $data): void
+    public function actualizarProducto(int $id, int $negocioId, array $data): void
     {
         $fields = [];
         foreach (array_keys($data) as $field) {
@@ -87,16 +83,20 @@ class ProductoRepository
         }
 
         $data['id'] = $id;
+        $data['scope_negocio_id'] = $negocioId;
         $stmt = $this->db->prepare(
-            'UPDATE productos SET ' . implode(', ', $fields) . ' WHERE id = :id'
+            'UPDATE productos SET ' . implode(', ', $fields)
+            . ' WHERE id = :id AND negocio_id = :scope_negocio_id'
         );
         $stmt->execute($data);
     }
 
-    public function eliminarProducto(int $id): bool
+    public function eliminarProducto(int $id, int $negocioId): bool
     {
-        $stmt = $this->db->prepare('DELETE FROM productos WHERE id = :id');
-        $stmt->execute(['id' => $id]);
+        $stmt = $this->db->prepare(
+            'DELETE FROM productos WHERE id = :id AND negocio_id = :negocio_id'
+        );
+        $stmt->execute(['id' => $id, 'negocio_id' => $negocioId]);
 
         return $stmt->rowCount() > 0;
     }

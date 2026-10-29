@@ -1,7 +1,9 @@
 <?php
 namespace Services;
 require_once __DIR__ . '/../repositories/ProductoRepository.php';
+require_once __DIR__ . '/../core/AuthorizationException.php';
 
+use Core\AuthorizationException;
 use Repositories\ProductoRepository;
 class ProductoService
 {
@@ -19,19 +21,22 @@ class ProductoService
     {
         $this->repo = new ProductoRepository();
     }
-    public function listarProductos(?int $negocioId = null): array
+    public function listarProductos(int $negocioId, ?int $filtroNegocioId = null): array
     {
-        if ($negocioId !== null && $negocioId <= 0) {
+        if ($negocioId <= 0) {
             throw new \InvalidArgumentException('El ID del negocio debe ser un entero positivo.');
+        }
+        if ($filtroNegocioId !== null && $filtroNegocioId !== $negocioId) {
+            throw new AuthorizationException('No tiene permiso para consultar productos de otro negocio.');
         }
 
         return $this->repo->getAll($negocioId);
     }
 
-    public function obtenerProducto(int $id): array
+    public function obtenerProducto(int $id, int $negocioId): array
     {
         $this->validarId($id);
-        $producto = $this->repo->getById($id);
+        $producto = $this->repo->getById($id, $negocioId);
         if ($producto === null) {
             throw new \OutOfBoundsException('No se encontró el producto solicitado.');
         }
@@ -39,43 +44,51 @@ class ProductoService
         return $producto;
     }
 
-    public function crearProducto(array $data): array
+    public function crearProducto(array $data, int $negocioId): array
     {
+        if (isset($data['negocio_id'])
+            && $this->validarEnteroPositivo($data['negocio_id'], 'negocio_id') !== $negocioId) {
+            throw new AuthorizationException('No puede crear productos para otro negocio.');
+        }
+        $data['negocio_id'] = $negocioId;
         $producto = $this->validarDatos($data, false);
         $this->validarNegocio($producto['negocio_id']);
         $this->validarDuplicado($producto['negocio_id'], $producto['nombre']);
 
         $id = $this->repo->crearProducto($producto);
-        return $this->obtenerProducto($id);
+        return $this->obtenerProducto($id, $negocioId);
     }
 
-    public function actualizarProducto(int $id, array $data): array
+    public function actualizarProducto(int $id, array $data, int $negocioId): array
     {
         $this->validarId($id);
-        $actual = $this->repo->getById($id);
+        $actual = $this->repo->getById($id, $negocioId);
         if ($actual === null) {
             throw new \OutOfBoundsException('No se encontró el producto que se desea actualizar.');
         }
 
         $producto = $this->validarDatos($data, true);
-        $negocioId = $producto['negocio_id'] ?? (int) $actual['negocio_id'];
+        $targetBusinessId = $producto['negocio_id'] ?? (int) $actual['negocio_id'];
+        if ($targetBusinessId !== $negocioId) {
+            throw new AuthorizationException('No puede mover el producto a otro negocio.');
+        }
         $nombre = $producto['nombre'] ?? $actual['nombre'];
         if (isset($producto['negocio_id'])) {
-            $this->validarNegocio($negocioId);
+            $this->validarNegocio($targetBusinessId);
         }
 
         if (isset($producto['negocio_id']) || isset($producto['nombre'])) {
-            $this->validarDuplicado($negocioId, $nombre, $id);
+            $this->validarDuplicado($targetBusinessId, $nombre, $id);
         }
 
-        $this->repo->actualizarProducto($id, $producto);
-        return $this->obtenerProducto($id);
+        $this->repo->actualizarProducto($id, $negocioId, $producto);
+        return $this->obtenerProducto($id, $negocioId);
     }
 
-    public function eliminarProducto(int $id): void
+    public function eliminarProducto(int $id, int $negocioId): void
     {
         $this->validarId($id);
-        if (!$this->repo->eliminarProducto($id)) {
+        if (!$this->repo->eliminarProducto($id, $negocioId)) {
             throw new \OutOfBoundsException('No se encontró el producto que se desea eliminar.');
         }
     }

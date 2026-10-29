@@ -3,7 +3,9 @@ namespace Controllers;
 
 require_once __DIR__ . '/../services/ProductoService.php';
 require_once __DIR__ . '/../core/Response.php';
+require_once __DIR__ . '/../core/AuthorizationException.php';
 
+use Core\AuthorizationException;
 use Services\ProductoService;
 use Core\Response;
 
@@ -15,24 +17,28 @@ class ProductoController
     {
         $this->productoService = new ProductoService();
     }
-    public function listarProductos(): void
+    public function listarProductos(int $negocioId): void
     {
         try {
-            $negocioId = isset($_GET['negocio_id']) ? $this->parseId($_GET['negocio_id']) : null;
-            $productos = $this->productoService->listarProductos($negocioId);
+            $filtroNegocioId = isset($_GET['negocio_id'])
+                ? $this->parseId($_GET['negocio_id'])
+                : null;
+            $productos = $this->productoService->listarProductos($negocioId, $filtroNegocioId);
             Response::json($productos, 200);
         } catch (\InvalidArgumentException $e) {
             Response::error($e->getMessage(), 400);
+        } catch (AuthorizationException $e) {
+            Response::error($e->getMessage(), 403);
         } catch (\Exception $e) {
             error_log($e->getMessage());
             Response::error('No fue posible consultar los productos.', 500);
         }
     }
 
-    public function obtenerProducto(int $id): void
+    public function obtenerProducto(int $id, int $negocioId): void
     {
         try {
-            Response::json($this->productoService->obtenerProducto($id), 200);
+            Response::json($this->productoService->obtenerProducto($id, $negocioId), 200);
         } catch (\OutOfBoundsException $e) {
             Response::error($e->getMessage(), 404);
         } catch (\Exception $e) {
@@ -41,10 +47,10 @@ class ProductoController
         }
     }
 
-    public function crearProducto(): void
+    public function crearProducto(int $negocioId): void
     {
         try {
-            $producto = $this->productoService->crearProducto($this->getJsonBody());
+            $producto = $this->productoService->crearProducto($this->getJsonBody(), $negocioId);
             Response::json([
                 'success' => true,
                 'message' => 'Producto creado exitosamente.',
@@ -54,16 +60,22 @@ class ProductoController
             Response::error($e->getMessage(), 422);
         } catch (\DomainException $e) {
             Response::error($e->getMessage(), 409);
+        } catch (AuthorizationException $e) {
+            Response::error($e->getMessage(), 403);
         } catch (\Exception $e) {
             error_log($e->getMessage());
             Response::error('No fue posible crear el producto.', 500);
         }
     }
 
-    public function actualizarProducto(int $id): void
+    public function actualizarProducto(int $id, int $negocioId): void
     {
         try {
-            $producto = $this->productoService->actualizarProducto($id, $this->getJsonBody());
+            $producto = $this->productoService->actualizarProducto(
+                $id,
+                $this->getJsonBody(),
+                $negocioId
+            );
             Response::json([
                 'success' => true,
                 'message' => 'Producto actualizado exitosamente.',
@@ -75,22 +87,26 @@ class ProductoController
             Response::error($e->getMessage(), 404);
         } catch (\DomainException $e) {
             Response::error($e->getMessage(), 409);
+        } catch (AuthorizationException $e) {
+            Response::error($e->getMessage(), 403);
         } catch (\Exception $e) {
             error_log($e->getMessage());
             Response::error('No fue posible actualizar el producto.', 500);
         }
     }
 
-    public function eliminarProducto(int $id): void
+    public function eliminarProducto(int $id, int $negocioId): void
     {
         try {
-            $this->productoService->eliminarProducto($id);
+            $this->productoService->eliminarProducto($id, $negocioId);
             Response::json([
                 'success' => true,
                 'message' => 'Producto eliminado exitosamente.',
             ], 200);
         } catch (\OutOfBoundsException $e) {
             Response::error($e->getMessage(), 404);
+        } catch (AuthorizationException $e) {
+            Response::error($e->getMessage(), 403);
         } catch (\Exception $e) {
             error_log($e->getMessage());
             Response::error('No fue posible eliminar el producto.', 500);

@@ -3,9 +3,11 @@ namespace Controllers;
 
 require_once __DIR__ . '/../services/NegocioService.php';
 require_once __DIR__ . '/../core/Response.php';
+require_once __DIR__ . '/../core/AuthorizationException.php';
 
-use Services\NegocioService; // Ajusta el namespace si tu servicio lo usa
+use Core\AuthorizationException;
 use Core\Response;
+use Services\NegocioService;
 
 class NegocioController
 {
@@ -16,53 +18,108 @@ class NegocioController
         $this->service = new NegocioService();
     }
 
-    public function listarNegocios(): void
+    public function listarNegocios(int $negocioId): void
     {
         try {
-            $negocios = $this->service->listarNegocios();
-            Response::json($negocios, 200);
+            Response::json($this->service->listarNegocios($negocioId));
         } catch (\Exception $e) {
-            Response::error($e->getMessage(), 500);
+            $this->reportError($e, 'No fue posible consultar los negocios.');
         }
     }
 
-    public function obtenerNegocioPorId(int $id): void
+    public function obtenerNegocioPorId(int $id, int $negocioAutenticado): void
     {
         try {
-            $negocio = $this->service->obtenerNegocioPorId($id);
-            if (!$negocio) {
-                Response::error("Negocio no encontrado", 404);
-            }
-            Response::json($negocio, 200);
+            Response::json($this->service->obtenerNegocioPorId($id, $negocioAutenticado));
+        } catch (\InvalidArgumentException $e) {
+            Response::error($e->getMessage(), 400);
+        } catch (\OutOfBoundsException $e) {
+            Response::error($e->getMessage(), 404);
+        } catch (AuthorizationException $e) {
+            Response::error($e->getMessage(), 403);
         } catch (\Exception $e) {
-            Response::error($e->getMessage(), 500);
+            $this->reportError($e, 'No fue posible consultar el negocio.');
         }
     }
 
-    public function actualizarConfiguracion(): void {
+    public function crearNegocio(): void
+    {
         try {
-            $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
-            if ($id <= 0) {
-                Response::error("ID de negocio inválido", 400);
-            }
-
-            // Obtener los datos enviados en formato JSON (desde Postman o Angular)
-            $input = json_decode(file_get_contents('php://input'), true);
-
-            if (!$input) {
-                Response::error("No se recibieron datos para actualizar", 400);
-            }
-
-            $actualizado = $this->service->actualizarConfiguracion($id, $input);
-
-            if ($actualizado) {
-                Response::json(["message" => "Configuración del negocio actualizada exitosamente"], 200);
-            } else {
-                Response::error("No se pudo actualizar el negocio", 400);
-            }
-
+            $business = $this->service->crearNegocio($this->getJsonBody());
+            Response::json([
+                'success' => true,
+                'message' => 'Negocio creado exitosamente.',
+                'data' => $business,
+            ], 201);
+        } catch (\InvalidArgumentException $e) {
+            Response::error($e->getMessage(), 422);
+        } catch (\DomainException $e) {
+            Response::error($e->getMessage(), 409);
         } catch (\Exception $e) {
-            Response::error($e->getMessage(), 500);
+            $this->reportError($e, 'No fue posible crear el negocio.');
         }
+    }
+
+    public function actualizarNegocio(int $id, int $negocioAutenticado): void
+    {
+        try {
+            $business = $this->service->actualizarNegocio(
+                $id,
+                $this->getJsonBody(),
+                $negocioAutenticado
+            );
+            Response::json([
+                'success' => true,
+                'message' => 'Negocio actualizado exitosamente.',
+                'data' => $business,
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            Response::error($e->getMessage(), 422);
+        } catch (\OutOfBoundsException $e) {
+            Response::error($e->getMessage(), 404);
+        } catch (\DomainException $e) {
+            Response::error($e->getMessage(), 409);
+        } catch (AuthorizationException $e) {
+            Response::error($e->getMessage(), 403);
+        } catch (\Exception $e) {
+            $this->reportError($e, 'No fue posible actualizar el negocio.');
+        }
+    }
+
+    public function eliminarNegocio(int $id, int $negocioAutenticado): void
+    {
+        try {
+            $this->service->eliminarNegocio($id, $negocioAutenticado);
+            Response::json([
+                'success' => true,
+                'message' => 'Negocio eliminado exitosamente.',
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            Response::error($e->getMessage(), 400);
+        } catch (\OutOfBoundsException $e) {
+            Response::error($e->getMessage(), 404);
+        } catch (\DomainException $e) {
+            Response::error($e->getMessage(), 409);
+        } catch (AuthorizationException $e) {
+            Response::error($e->getMessage(), 403);
+        } catch (\Exception $e) {
+            $this->reportError($e, 'No fue posible eliminar el negocio.');
+        }
+    }
+
+    private function getJsonBody(): array
+    {
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (json_last_error() !== JSON_ERROR_NONE || !is_array($input)) {
+            throw new \InvalidArgumentException('El cuerpo debe ser un objeto JSON válido.');
+        }
+
+        return $input;
+    }
+
+    private function reportError(\Exception $exception, string $message): void
+    {
+        error_log($exception->getMessage());
+        Response::error($message, 500);
     }
 }
