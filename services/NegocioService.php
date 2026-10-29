@@ -31,6 +31,16 @@ class NegocioService
         //logica para traer por id
         return $this->repo->getNegocioById($id);
     }
+
+    public function actualizarConfiguracion(int $id, array $data): bool {
+        // Aquí puedes agregar validaciones de negocio si lo deseas 
+        // (ej: validar que el nombre no esté vacío)
+        if (empty($data['nombre'])) {
+            throw new \Exception("El nombre del negocio es obligatorio.");
+        }
+
+        return $this->repo->updateConfiguration($id, $data);
+    }
 }
 
 ?>

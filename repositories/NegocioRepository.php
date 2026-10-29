@@ -35,5 +35,31 @@ class NegocioRepository
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function updateConfiguration(int $id, array $data): bool
+    {
+        $sql = "UPDATE negocios SET
+                nombre = :nombre,
+                tipo = :tipo, 
+                descripcion = :descripcion, 
+                logo_url = :logo_url, 
+                banner_url = :banner_url, 
+                telefono_whatsapp = :telefono_whatsapp
+                WHERE id = :id";
+
+        $stmt = $this->db->prepare($sql);
+
+        $resp = $stmt->execute([
+            'id' => $id,
+            'nombre' => $data['nombre'] ?? null,
+            'tipo' => $data['tipo'] ?? null,
+            'descripcion' => $data['descripcion'] ?? null,
+            'logo_url' => $data['logo_url'] ?? null,
+            'banner_url' => $data['banner_url'] ?? null,
+            'telefono_whatsapp' => $data['telefono_whatsapp'] ?? null
+        ]);
+
+        return $resp;
+    }
 }
 ?>

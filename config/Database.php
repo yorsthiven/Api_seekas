@@ -28,7 +28,8 @@ class Database {
             try {
                 self::$instance = new PDO($dsn, $config['user'], $config['pass'], $options);
             } catch (PDOException $e) {
-                \Core\Response::error("Error de conexión: " . $e->getMessage(), 500);
+                error_log($e->getMessage());
+                throw new \RuntimeException('No fue posible conectar con la base de datos.', 0, $e);
             }
         }
         return self::$instance;

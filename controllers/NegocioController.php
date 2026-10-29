@@ -38,4 +38,31 @@ class NegocioController
             Response::error($e->getMessage(), 500);
         }
     }
+
+    public function actualizarConfiguracion(): void {
+        try {
+            $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+            if ($id <= 0) {
+                Response::error("ID de negocio inválido", 400);
+            }
+
+            // Obtener los datos enviados en formato JSON (desde Postman o Angular)
+            $input = json_decode(file_get_contents('php://input'), true);
+
+            if (!$input) {
+                Response::error("No se recibieron datos para actualizar", 400);
+            }
+
+            $actualizado = $this->service->actualizarConfiguracion($id, $input);
+
+            if ($actualizado) {
+                Response::json(["message" => "Configuración del negocio actualizada exitosamente"], 200);
+            } else {
+                Response::error("No se pudo actualizar el negocio", 400);
+            }
+
+        } catch (\Exception $e) {
+            Response::error($e->getMessage(), 500);
+        }
+    }
 }
