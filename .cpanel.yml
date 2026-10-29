@@ -2,7 +2,8 @@
 # Configuracion de despliegue automatico para cPanel.
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/prowebco/public_html/api.proweb.com.co/
+    - export DEPLOYPATH=/home/prowebco/api.proweb.com.co/
     - /bin/cp -r * $DEPLOYPATH
+    - /bin/cp .htaccess $DEPLOYPATH
 
   

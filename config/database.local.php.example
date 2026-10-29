@@ -1,0 +1,9 @@
+<?php
+return [
+    'db_host' => 'localhost',
+    'db_name' => 'NOMBRE_DE_TU_BASE_LOCAL',
+    'db_user' => 'USUARIO_DE_TU_BASE_LOCAL',
+    'db_password' => 'CONTRASENA_DE_TU_BASE_LOCAL',
+    'jwt_secret' => 'PEGA_UN_SECRETO_ALEATORIO_LOCAL_DE_64_CARACTERES',
+    'api_admin_token' => 'PEGA_OTRO_SECRETO_ALEATORIO_LOCAL_DE_64_CARACTERES',
+];

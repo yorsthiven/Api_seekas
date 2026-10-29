@@ -2,7 +2,7 @@
 
 ## 1. Crear la configuración privada
 
-En cPanel abre **Administrador de archivos** y crea `api-secrets.php` en la carpeta principal de tu cuenta, al mismo nivel que `public_html`, no dentro de `public_html` ni de la carpeta de la API. El código busca automáticamente ese archivo desde la ruta de despliegue configurada en `.cpanel.yml`.
+En cPanel abre **Administrador de archivos** y crea `api-secrets.php` en la carpeta principal de tu cuenta, al mismo nivel que `public_html` y `api.proweb.com.co`, no dentro de ninguna carpeta pública. El código lo busca dos niveles arriba de `config/Database.php`.
 
 Pega esta estructura y reemplaza cada valor entre comillas por su valor real:
 
@@ -34,7 +34,7 @@ Si tu plan no permite crear archivos fuera de `public_html`, consulta al soporte
 
 La configuración anterior del proyecto contenía credenciales de la base de datos en un archivo versionado. Por precaución, cambia la contraseña de ese usuario desde cPanel y actualiza `db_password` en `api-secrets.php`. La contraseña anterior pudo permanecer en el historial de Git, por lo que eliminar el archivo de la versión actual no sustituye la rotación.
 
-El proyecto ya no necesita `config/database.local.php`; está excluido de Git. No vuelvas a agregar credenciales a ese archivo.
+Para desarrollo local, copia [la plantilla local](./config/database.local.php.example) a `config/database.local.php` y reemplaza los valores de ejemplo por las credenciales de tu base local y dos secretos distintos. Este archivo está excluido de Git. En el hosting, conserva `api-secrets.php` fuera de las carpetas públicas; el proyecto busca primero las variables de entorno, luego la configuración local y finalmente el archivo privado del hosting. El despliegue de cPanel publica el código en `/home/prowebco/api.proweb.com.co`, que debe coincidir con el directorio configurado para el subdominio.
 
 ## 3. Preparar la contraseña de usuarios
 

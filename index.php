@@ -1,4 +1,12 @@
 <?php
+require_once __DIR__ . '/core/Response.php';
+
+ini_set('display_errors', '0');
+set_exception_handler(static function (\Throwable $exception): void {
+    error_log('Error no controlado en el API: ' . $exception->getMessage());
+    \Core\Response::error('Error interno del servidor.', 500);
+});
+
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Admin-Token');
@@ -9,8 +17,6 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
 }
 
 header('Content-Type: application/json; charset=UTF-8');
-
-require_once __DIR__ . '/core/Response.php';
 require_once __DIR__ . '/core/Auth.php';
 
 $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);

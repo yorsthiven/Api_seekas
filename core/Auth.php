@@ -156,18 +156,26 @@ class Auth
 
     private static function getPrivateConfigValue(string $key): ?string
     {
-        $configFile = dirname(__DIR__, 3) . '/api-secrets.php';
-        if (!is_file($configFile)) {
-            return null;
+        $configFiles = [
+            dirname(__DIR__) . '/config/database.local.php',
+            dirname(__DIR__, 2) . '/api-secrets.php',
+        ];
+        foreach ($configFiles as $configFile) {
+            if (!is_file($configFile)) {
+                continue;
+            }
+            $config = require $configFile;
+            if (!is_array($config)) {
+                throw new \RuntimeException('El archivo privado de configuración no es válido.');
+            }
+
+            $value = $config[$key] ?? null;
+            if (is_string($value) && $value !== '') {
+                return $value;
+            }
         }
 
-        $config = require $configFile;
-        if (!is_array($config)) {
-            throw new \RuntimeException('El archivo privado de configuración no es válido.');
-        }
-
-        $value = $config[$key] ?? null;
-        return is_string($value) ? $value : null;
+        return null;
     }
 
     private static function base64UrlEncode(string $value): string
